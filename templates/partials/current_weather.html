@@ -1,0 +1,143 @@
+<!-- Current Weather Section (Part 1) -->
+{% if weather.source == "onecall" %}
+    {% set w = weather.data.current %}
+    {% set daily_today = weather.data.daily[0] if weather.data.daily else none %}
+{% else %}
+    {% set w = weather.current.main %}
+    {% set wind = weather.current.wind %}
+    {% set desc = weather.current.weather[0] if weather.current.weather else none %}
+{% endif %}
+
+<section class="mb-6">
+    <!-- Location header -->
+    <div class="flex items-center gap-2 mb-5">
+        <svg class="w-4 h-4 text-blue-400/60" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 010-5 2.5 2.5 0 010 5z"/></svg>
+        <h2 class="text-lg font-medium text-gray-200">{{ location }}</h2>
+    </div>
+
+    {% if weather.source == "onecall" %}
+    <!-- Stats bar -->
+    <div class="stats-bar flex flex-wrap gap-2 mb-6">
+        <span class="stat-pill"><b>Wind</b> <span class="wv" data-ms="{{ w.wind_speed }}">{{ w.wind_speed|round(1) }} m/s</span></span>
+        <span class="stat-pill"><b>Humidity</b> {{ w.humidity }}%</span>
+        <span class="stat-pill"><b>Dew Pt</b> <span class="tv" data-c="{{ w.dew_point }}">{{ w.dew_point|round(0)|int }}°</span></span>
+        <span class="stat-pill"><b>UV</b> {{ w.uvi|round(0)|int }}</span>
+        <span class="stat-pill"><b>Visibility</b> {{ (w.visibility / 1000)|round(1) }} km</span>
+        <span class="stat-pill"><b>Pressure</b> {{ w.pressure }} mb</span>
+    </div>
+
+    <!-- Main temperature display -->
+    <div class="glass-card p-6 mb-6">
+        <div class="weather-hero flex items-center gap-6">
+            <img src="https://openweathermap.org/img/wn/{{ w.weather[0].icon }}@4x.png"
+                 alt="{{ w.weather[0].description }}" class="w-28 h-28 weather-icon-lg">
+            <div>
+                <div class="text-7xl font-extralight tracking-tighter"><span class="tv" data-c="{{ w.temp }}">{{ w.temp|round(0)|int }}°</span></div>
+                <div class="text-lg text-gray-300 capitalize mt-1">{{ w.weather[0].description }}</div>
+            </div>
+            <div class="text-sm text-gray-400 ml-auto space-y-1.5">
+                <div>Feels Like <span class="text-gray-200 font-medium tv" data-c="{{ w.feels_like }}">{{ w.feels_like|round(0)|int }}°</span></div>
+                {% if daily_today %}
+                <div>Low <span class="text-blue-300 font-medium tv" data-c="{{ daily_today.temp.min }}">{{ daily_today.temp.min|round(0)|int }}°</span></div>
+                <div>High <span class="text-orange-300 font-medium tv" data-c="{{ daily_today.temp.max }}">{{ daily_today.temp.max|round(0)|int }}°</span></div>
+                {% endif %}
+            </div>
+        </div>
+        {% if w.sunrise and w.sunset %}
+        {% set moon = w.dt|moon_phase %}
+        <div class="sun-times border-t border-gray-700/30 mt-4 pt-3">
+            <span class="flex items-center gap-1">
+                <svg class="w-4 h-4 text-yellow-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707"/><circle cx="12" cy="12" r="4"/></svg>
+                {{ w.sunrise|timestamp_to_time(country) }}
+            </span>
+            <span class="flex items-center gap-1">
+                <svg class="w-4 h-4 text-orange-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707"/><path d="M17 12a5 5 0 00-10 0"/></svg>
+                {{ w.sunset|timestamp_to_time(country) }}
+            </span>
+            <span class="flex items-center gap-1" title="{{ moon.name }} – {{ moon.illumination }}% illuminated">
+                <span class="text-lg">{{ moon.emoji }}</span>
+                <span class="text-gray-400 text-xs">{{ moon.name }}</span>
+            </span>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Hourly forecast strip -->
+    {% if weather.data.hourly %}
+    <div class="glass-card p-4 overflow-x-auto hourly-scroll">
+        <div class="flex gap-1 min-w-max">
+            {% for h in weather.data.hourly[:12] %}
+            <div class="hourly-item text-xs text-gray-400">
+                <span>{{ h.dt|timestamp_to_hour(country) }}</span>
+                <img src="https://openweathermap.org/img/wn/{{ h.weather[0].icon }}.png"
+                     alt="" class="w-8 h-8">
+                <span class="text-gray-200 font-medium tv" data-c="{{ h.temp }}">{{ h.temp|round(0)|int }}°</span>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    {% else %}
+    <!-- Basic API fallback display -->
+    <div class="stats-bar flex flex-wrap gap-2 mb-6">
+        <span class="stat-pill"><b>Wind</b> <span class="wv" data-ms="{{ weather.current.wind.speed }}">{{ weather.current.wind.speed|round(1) }} m/s</span></span>
+        <span class="stat-pill"><b>Humidity</b> {{ weather.current.main.humidity }}%</span>
+        <span class="stat-pill"><b>Visibility</b> {{ (weather.current.visibility / 1000)|round(1) }} km</span>
+        <span class="stat-pill"><b>Pressure</b> {{ weather.current.main.pressure }} mb</span>
+    </div>
+
+    <div class="glass-card p-6 mb-6">
+        <div class="weather-hero flex items-center gap-6">
+            {% if weather.current.weather %}
+            <img src="https://openweathermap.org/img/wn/{{ weather.current.weather[0].icon }}@4x.png"
+                 alt="{{ weather.current.weather[0].description }}" class="w-28 h-28 weather-icon-lg">
+            {% endif %}
+            <div>
+                <div class="text-7xl font-extralight tracking-tighter"><span class="tv" data-c="{{ weather.current.main.temp }}">{{ weather.current.main.temp|round(0)|int }}°</span></div>
+                {% if weather.current.weather %}
+                <div class="text-lg text-gray-300 capitalize mt-1">{{ weather.current.weather[0].description }}</div>
+                {% endif %}
+            </div>
+            <div class="text-sm text-gray-400 ml-auto space-y-1.5">
+                <div>Feels Like <span class="text-gray-200 font-medium tv" data-c="{{ weather.current.main.feels_like }}">{{ weather.current.main.feels_like|round(0)|int }}°</span></div>
+                <div>Low <span class="text-blue-300 font-medium tv" data-c="{{ weather.current.main.temp_min }}">{{ weather.current.main.temp_min|round(0)|int }}°</span></div>
+                <div>High <span class="text-orange-300 font-medium tv" data-c="{{ weather.current.main.temp_max }}">{{ weather.current.main.temp_max|round(0)|int }}°</span></div>
+            </div>
+        </div>
+        {% if weather.current.sys and weather.current.sys.sunrise and weather.current.sys.sunset %}
+        {% set moon = weather.current.dt|moon_phase %}
+        <div class="sun-times border-t border-gray-700/30 mt-4 pt-3">
+            <span class="flex items-center gap-1">
+                <svg class="w-4 h-4 text-yellow-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707"/><circle cx="12" cy="12" r="4"/></svg>
+                {{ weather.current.sys.sunrise|timestamp_to_time(country) }}
+            </span>
+            <span class="flex items-center gap-1">
+                <svg class="w-4 h-4 text-orange-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707"/><path d="M17 12a5 5 0 00-10 0"/></svg>
+                {{ weather.current.sys.sunset|timestamp_to_time(country) }}
+            </span>
+            <span class="flex items-center gap-1" title="{{ moon.name }} – {{ moon.illumination }}% illuminated">
+                <span class="text-lg">{{ moon.emoji }}</span>
+                <span class="text-gray-400 text-xs">{{ moon.name }}</span>
+            </span>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- 3-hour forecast strip from basic API -->
+    {% if weather.forecast and weather.forecast.list %}
+    <div class="glass-card p-4 overflow-x-auto hourly-scroll">
+        <div class="flex gap-1 min-w-max">
+            {% for h in weather.forecast.list[:12] %}
+            <div class="hourly-item text-xs text-gray-400">
+                <span>{{ h.dt|timestamp_to_hour(country) }}</span>
+                <img src="https://openweathermap.org/img/wn/{{ h.weather[0].icon }}.png"
+                     alt="" class="w-8 h-8">
+                <span class="text-gray-200 font-medium tv" data-c="{{ h.main.temp }}">{{ h.main.temp|round(0)|int }}°</span>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+    {% endif %}
+</section>

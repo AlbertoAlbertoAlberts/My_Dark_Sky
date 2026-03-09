@@ -1,0 +1,90 @@
+<!-- Daily Forecast Section (Part 2) -->
+<section class="mb-6">
+    {% if weather.source == "onecall" and weather.data.daily %}
+        {% set days = weather.data.daily %}
+        {% set all_mins = days|map(attribute='temp.min')|list %}
+        {% set all_maxs = days|map(attribute='temp.max')|list %}
+        {% set range_min = all_mins|min %}
+        {% set range_max = all_maxs|max %}
+
+        {% if weather.data.daily[0].summary is defined %}
+        <p class="text-gray-400 text-center mb-5 text-sm italic">{{ weather.data.daily[0].summary }}</p>
+        {% endif %}
+
+        <div class="glass-card divide-y divide-gray-700/30 overflow-hidden">
+            {% for day in days[:8] %}
+            <div class="daily-row">
+                <div class="w-14 text-sm font-medium text-gray-200">
+                    {% if loop.index0 == 0 %}Today{% else %}{{ day.dt|timestamp_to_day }}{% endif %}
+                </div>
+                <img src="https://openweathermap.org/img/wn/{{ day.weather[0].icon }}.png"
+                     alt="{{ day.weather[0].description }}" class="w-8 h-8">
+                <span class="text-blue-300/80 text-sm w-10 text-right font-medium tv" data-c="{{ day.temp.min }}">{{ day.temp.min|round(0)|int }}°</span>
+                <div class="flex-1 temp-bar-track mx-2">
+                    {% set total = range_max - range_min if range_max != range_min else 1 %}
+                    {% set left_pct = ((day.temp.min - range_min) / total * 100)|round(1) %}
+                    {% set right_pct = (100 - (day.temp.max - range_min) / total * 100)|round(1) %}
+                    <div class="temp-bar-fill"
+                         style="left: {{ left_pct }}%; right: {{ right_pct }}%;"></div>
+                </div>
+                <span class="text-orange-200 text-sm w-10 font-medium tv" data-c="{{ day.temp.max }}">{{ day.temp.max|round(0)|int }}°</span>
+            </div>
+            {% endfor %}
+        </div>
+
+    {% elif weather.source == "basic" and weather.forecast %}
+        {% set ns = namespace(days={}) %}
+        {% for item in weather.forecast.list %}
+            {% set date_key = item.dt|timestamp_to_date %}
+            {% if date_key not in ns.days %}
+                {% set _ = ns.days.update({date_key: {"min": item.main.temp_min, "max": item.main.temp_max, "icon": item.weather[0].icon, "desc": item.weather[0].description, "dt": item.dt}}) %}
+            {% else %}
+                {% if item.main.temp_min < ns.days[date_key]["min"] %}
+                    {% set _ = ns.days[date_key].update({"min": item.main.temp_min}) %}
+                {% endif %}
+                {% if item.main.temp_max > ns.days[date_key]["max"] %}
+                    {% set _ = ns.days[date_key].update({"max": item.main.temp_max}) %}
+                {% endif %}
+            {% endif %}
+        {% endfor %}
+
+        {% set all_basic_mins = [] %}
+        {% set all_basic_maxs = [] %}
+        {% for dk, dv in ns.days.items() %}
+            {% if all_basic_mins.append(dv.min) %}{% endif %}
+            {% if all_basic_maxs.append(dv.max) %}{% endif %}
+        {% endfor %}
+        {% set brange_min = all_basic_mins|min if all_basic_mins else 0 %}
+        {% set brange_max = all_basic_maxs|max if all_basic_maxs else 1 %}
+
+        <div class="glass-card divide-y divide-gray-700/30 overflow-hidden">
+            {% for date_key, day in ns.days.items() %}
+            <div class="daily-row">
+                <div class="w-14 text-sm font-medium text-gray-200">
+                    {% if loop.index0 == 0 %}Today{% else %}{{ day.dt|timestamp_to_day }}{% endif %}
+                </div>
+                <img src="https://openweathermap.org/img/wn/{{ day.icon }}.png"
+                     alt="{{ day.desc }}" class="w-8 h-8">
+                <span class="text-blue-300/80 text-sm w-10 text-right font-medium tv" data-c="{{ day.min }}">{{ day.min|round(0)|int }}°</span>
+                <div class="flex-1 temp-bar-track mx-2">
+                    {% set total = brange_max - brange_min if brange_max != brange_min else 1 %}
+                    {% set left_pct = ((day.min - brange_min) / total * 100)|round(1) %}
+                    {% set right_pct = (100 - (day.max - brange_min) / total * 100)|round(1) %}
+                    <div class="temp-bar-fill"
+                         style="left: {{ left_pct }}%; right: {{ right_pct }}%;"></div>
+                </div>
+                <span class="text-orange-200 text-sm w-10 font-medium tv" data-c="{{ day.max }}">{{ day.max|round(0)|int }}°</span>
+            </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <!-- Time Machine trigger -->
+    <div class="text-center mt-8">
+        <p class="text-gray-500 text-sm mb-3">Explore the weather in the past:</p>
+        <button id="time-machine-btn"
+                class="bg-teal-600 hover:bg-teal-700 text-white px-8 py-2.5 rounded-xl font-medium text-sm transition btn-lift">
+            TIME MACHINE
+        </button>
+    </div>
+</section>
