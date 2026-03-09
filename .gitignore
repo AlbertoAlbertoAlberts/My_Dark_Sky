@@ -8,3 +8,6 @@ instance/
 .DS_Store
 *.swp
 *.swo
+
+Plans_doc/
+TASK_DESCRIPTION/
