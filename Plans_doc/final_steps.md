@@ -30,10 +30,8 @@ easiest) and **Railway** (also easy). Pick one.
    git add -A
    git commit -m "My Dark Sky - weather app"
 
-   # Create a repo on GitHub (via browser or gh CLI), then:
-   git remote add github https://github.com/YOUR_USERNAME/my-dark-sky.git
-   git branch -M main
-   git push -u github main
+   # ✅ DONE — already pushed to:
+   # https://github.com/AlbertoAlbertoAlberts/My_Dark_Sky.git
    ```
 
 5. Back in Render, select your `my-dark-sky` repo.
