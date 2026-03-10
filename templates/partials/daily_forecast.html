@@ -15,7 +15,7 @@
             {% for day in days[:8] %}
             <div class="daily-row">
                 <div class="w-14 text-sm font-medium text-gray-200">
-                    {% if loop.index0 == 0 %}Today{% else %}{{ day.dt|timestamp_to_day }}{% endif %}
+                    {% if loop.index0 == 0 %}Today{% else %}{{ day.dt|timestamp_to_day(tz_offset) }}{% endif %}
                 </div>
                 <img src="https://openweathermap.org/img/wn/{{ day.weather[0].icon }}.png"
                      alt="{{ day.weather[0].description }}" class="w-8 h-8">
@@ -35,7 +35,7 @@
     {% elif weather.source == "basic" and weather.forecast %}
         {% set ns = namespace(days={}) %}
         {% for item in weather.forecast.list %}
-            {% set date_key = item.dt|timestamp_to_date %}
+            {% set date_key = item.dt|timestamp_to_date(tz_offset) %}
             {% if date_key not in ns.days %}
                 {% set _ = ns.days.update({date_key: {"min": item.main.temp_min, "max": item.main.temp_max, "icon": item.weather[0].icon, "desc": item.weather[0].description, "dt": item.dt}}) %}
             {% else %}
@@ -61,7 +61,7 @@
             {% for date_key, day in ns.days.items() %}
             <div class="daily-row">
                 <div class="w-14 text-sm font-medium text-gray-200">
-                    {% if loop.index0 == 0 %}Today{% else %}{{ day.dt|timestamp_to_day }}{% endif %}
+                    {% if loop.index0 == 0 %}Today{% else %}{{ day.dt|timestamp_to_day(tz_offset) }}{% endif %}
                 </div>
                 <img src="https://openweathermap.org/img/wn/{{ day.icon }}.png"
                      alt="{{ day.desc }}" class="w-8 h-8">

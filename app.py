@@ -1,5 +1,5 @@
 import math
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from flask import Flask, render_template, request, jsonify
 from config import FLASK_SECRET_KEY, SQLALCHEMY_DATABASE_URI
 from models import db
@@ -20,29 +20,36 @@ with app.app_context():
 AMPM_COUNTRIES = {'US', 'AU', 'CA', 'PH', 'MY', 'BD', 'EG', 'SA', 'CO'}
 
 
+def _local_dt(ts, tz_offset=0):
+    """Convert unix timestamp to datetime in the location's timezone."""
+    return datetime(1970, 1, 1) + timedelta(seconds=ts + tz_offset)
+
+
 # Jinja template filters
 @app.template_filter("timestamp_to_hour")
-def timestamp_to_hour(ts, country=None):
+def timestamp_to_hour(ts, country=None, tz_offset=0):
+    dt = _local_dt(ts, tz_offset)
     if country and country.upper() in AMPM_COUNTRIES:
-        return datetime.fromtimestamp(ts).strftime("%-I %p")
-    return datetime.fromtimestamp(ts).strftime("%H")
+        return dt.strftime("%-I %p")
+    return dt.strftime("%H")
 
 
 @app.template_filter("timestamp_to_time")
-def timestamp_to_time(ts, country=None):
+def timestamp_to_time(ts, country=None, tz_offset=0):
+    dt = _local_dt(ts, tz_offset)
     if country and country.upper() in AMPM_COUNTRIES:
-        return datetime.fromtimestamp(ts).strftime("%-I:%M %p")
-    return datetime.fromtimestamp(ts).strftime("%H:%M")
+        return dt.strftime("%-I:%M %p")
+    return dt.strftime("%H:%M")
 
 
 @app.template_filter("timestamp_to_day")
-def timestamp_to_day(ts):
-    return datetime.fromtimestamp(ts).strftime("%a")
+def timestamp_to_day(ts, tz_offset=0):
+    return _local_dt(ts, tz_offset).strftime("%a")
 
 
 @app.template_filter("timestamp_to_date")
-def timestamp_to_date(ts):
-    return datetime.fromtimestamp(ts).strftime("%Y-%m-%d")
+def timestamp_to_date(ts, tz_offset=0):
+    return _local_dt(ts, tz_offset).strftime("%Y-%m-%d")
 
 
 def _moon_phase(ts):
@@ -128,11 +135,18 @@ def weather():
         weather_data = weather_service.get_weather_data(lat, lon)
     except Exception:
         return render_template("index.html", error="Could not fetch weather data. Please check your API key or try again later.")
+    # Extract timezone offset (seconds from UTC) from weather data
+    if weather_data["source"] == "onecall":
+        tz_offset = weather_data["data"].get("timezone_offset", 0)
+    else:
+        tz_offset = weather_data["current"].get("timezone", 0)
+
     return render_template("index.html",
                            weather=weather_data,
                            location=location,
                            country=country,
-                           lat=lat, lon=lon)
+                           lat=lat, lon=lon,
+                           tz_offset=tz_offset)
 
 
 # --- JSON API endpoints ---

@@ -162,6 +162,7 @@
         const APP_LAT = {{ lat|default('null') }};
         const APP_LON = {{ lon|default('null') }};
         const APP_COUNTRY = '{{ country|default("") }}';
+        const APP_TZ_OFFSET = {{ tz_offset|default(0) }};
     </script>
     <script src="{{ url_for('static', filename='js/app.js') }}"></script>
 </body>
